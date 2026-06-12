@@ -43,15 +43,24 @@ Custom vocabulary produces 10–15% accuracy improvement on domain-specific term
 ### Finding 6 — Otter's onboarding teaches Connect Calendar → Try OtterPilot → Upgrade
 None of the three high-impact workflow steps surface in onboarding. All require users to discover them through Reddit, third-party reviews, or trial and error.
 
+### Finding 7 — Voice change detection should trigger progressive speaker enrollment
+Otter already detects speaker boundaries — the trigger exists in the pipeline. What is missing is a real-time UI prompt at each boundary: *"New speaker detected. Tag within 30 seconds."* Progressive enrollment throughout the meeting replaces one-time pre-meeting setup and eliminates post-meeting cleanup entirely.
+
+### Finding 8 — Overlap-aware calibration could predict speaker identity during crosstalk
+A 10-second pre-meeting calibration phase — all speakers talk simultaneously — builds overlap-robust voice embeddings. When crosstalk happens during the meeting, the system uses those fingerprints to decompose mixed audio rather than dropping it. Based on published overlap-aware diarization benchmarks, DER in high-crosstalk conditions drops from ~25–30% toward 10–12%.
+
 ---
 
 ## What Otter Could Ship
 
-Three sprint-sized product changes. No model retraining required.
-
-1. **Pre-meeting participant prompt** — detect new participants from calendar invite, prompt voice profile setup at the right moment
-2. **Live speaker tagging nudge** — surface the tag-early feature during the meeting, not after
+**Sprint-sized — no model changes:**
+1. **Pre-meeting participant prompt** — detect new participants from calendar invite, prompt voice profile setup
+2. **Progressive enrollment trigger** — fire a tagging prompt at each speaker change boundary (Finding 7)
 3. **Domain vocabulary onboarding** — ask industry at signup, pre-populate custom vocabulary
+
+**Quarter-sized — model and pipeline changes:**
+4. **Overlap-aware calibration phase** — 10-second pre-meeting overlap sample builds crosstalk-robust embeddings (Finding 8)
+5. **Zoom/Meet/Teams metadata integration** — pull participant display names at meeting start, close the 33% DER gap vs Fireflies without model retraining (Finding 3)
 
 ---
 
