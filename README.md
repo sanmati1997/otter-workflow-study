@@ -44,7 +44,7 @@ Custom vocabulary produces 10–15% accuracy improvement on domain-specific term
 None of the three high-impact workflow steps surface in onboarding. All require users to discover them through Reddit, third-party reviews, or trial and error.
 
 ### Finding 7 — Voice change detection should trigger progressive speaker enrollment
-Otter already detects speaker boundaries — the trigger exists in the pipeline. What is missing is a real-time UI prompt at each boundary: *"New speaker detected. Tag within 30 seconds."* Progressive enrollment throughout the meeting replaces one-time pre-meeting setup and eliminates post-meeting cleanup entirely.
+Otter already detects speaker boundaries — the trigger exists in the pipeline. What is missing is a tiered real-time prompt: 20-second window for the first speaker at meeting open, 10-second non-blocking prompt for every new voice detected mid-meeting, and an always-clickable inline label for any missed tags. 30 seconds is too long mid-meeting — speaker turns last 5–10 seconds in fast conversations.
 
 ### Finding 8 — Overlap-aware calibration could predict speaker identity during crosstalk
 A 10-second pre-meeting calibration phase — all speakers talk simultaneously — builds overlap-robust voice embeddings. When crosstalk happens during the meeting, the system uses those fingerprints to decompose mixed audio rather than dropping it. Based on published overlap-aware diarization benchmarks, DER in high-crosstalk conditions drops from ~25–30% toward 10–12%.

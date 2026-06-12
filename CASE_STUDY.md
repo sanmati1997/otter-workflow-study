@@ -200,15 +200,25 @@ None of these require model changes. All three are onboarding and UX decisions.
 
 **The proposed fix:** Otter already detects speaker changes — that is how diarization works. Every time the model segments a new voice boundary, the trigger exists in the pipeline. What is missing is a UI action at that exact moment.
 
-**The idea:** Every time Otter detects a new voice entering the conversation, surface a 30-second tagging prompt for that specific speaker — not a generic post-meeting cleanup screen, but a real-time nudge tied to the speaker change event.
+**The idea:** Every time Otter detects a new voice entering the conversation, surface a time-sensitive tagging prompt for that specific speaker — not a generic post-meeting cleanup screen, but a real-time nudge tied to the speaker change event.
+
+Prompt timing matters. In fast-paced meetings, speaker turns can last 5–10 seconds. A 30-second window is too long — the voice may already be gone before the user acts. The right model:
 
 ```
-Meeting minute 0:00 — Speaker A detected → prompt: "Who is this? Tag now"
-Meeting minute 2:14 — New voice detected → prompt: "New speaker joined. Tag within 30s"
-Meeting minute 8:45 — New voice detected → prompt: "New speaker joined. Tag within 30s"
+Meeting minute 0:00 — First speaker detected
+  → 20-second prompt at meeting open (relaxed — meeting hasn't started yet)
+
+Meeting minute 2:14 — New voice detected mid-meeting
+  → 10-second non-blocking prompt (tight, auto-dismisses, doesn't interrupt flow)
+
+Meeting minute 8:45 — New voice detected mid-meeting
+  → 10-second non-blocking prompt
+
+Any missed tag → "Speaker N" stays as a clickable inline label throughout
+  → User can tag anytime, not just during the window
 ```
 
-This is **progressive enrollment** — each new voice enrolls at the moment it appears, not retroactively. Otter already has the detection. It is missing the enrollment trigger.
+This is **progressive enrollment** — each new voice enrolls at the moment it appears, not retroactively. The window is short enough to stay in sync with fast conversation, non-blocking enough not to disrupt the meeting, and recoverable if missed. Otter already has the detection. It is missing the enrollment trigger and the tiered prompt design.
 
 **Why this works technically:** The speaker change boundary is already computed by the diarization model. Otter has the timestamp. All that is needed is a frontend event that fires at that boundary and prompts the user. No model changes. No retraining. Pure product engineering.
 
