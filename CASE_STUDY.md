@@ -15,9 +15,9 @@ I noticed the same pattern in Otter.ai.
 
 Otter markets 93–95% transcription accuracy. Users consistently report 60–85% in real conditions. The standard explanation is: bad audio, accents, noise. But that explanation is incomplete.
 
-The real gap is simpler: **Otter's output quality is almost entirely determined by what the user does in the first 30 seconds of a meeting — and Otter teaches none of it.**
+The real gap is simpler: **Otter has the features. Users just never find them — and in some cases, Otter uses them without telling users at all.**
 
-This is a documentation of that gap, built from Otter's own help content, published diarization research, independent benchmarks, and 200+ user reviews.
+This is a documentation of that gap, built from Otter's own help content, published diarization research, independent benchmarks, 200+ user reviews, and active litigation.
 
 ---
 
@@ -33,7 +33,7 @@ The model segments audio and groups segments by voice similarity using neural em
 **Stage 2 — Speaker Identification (profile matching)**
 A separate lookup matches those generic voice embeddings against a library of known voice profiles. If Otter has previously seen "Sanmati's" voice, it matches the new audio against that stored embedding and outputs an actual name instead of a number.
 
-**Critical implication:** If no voice profile exists for a speaker — which is true for every new participant in every first-time meeting — Stage 2 cannot run. The output stays as Speaker 1, Speaker 2. No amount of verbal introduction ("Hi I'm Sanmati") changes this, because diarization is acoustic, not lexical.
+**Critical implication:** If no voice profile exists for a speaker — which is true for every new participant in every first-time meeting — Stage 2 cannot run. The output stays as Speaker 1, Speaker 2. No amount of verbal introduction changes this, because diarization is acoustic, not lexical.
 
 This is the fundamental fact Otter's documentation never explains clearly.
 
@@ -65,66 +65,69 @@ Bad diarization → Scrambled summary → Wrong action item owners → Broken ac
 > *"Summaries for technical discussions turn generic: 'The team discussed system architecture' instead of actual details."*
 — anarlog.so reviewer
 
-**What actually works:** Clean diarization — achieved through Findings 4 and 5 below — directly produces cleaner summaries and correctly attributed action items. The fix is upstream, not in the summary engine.
+**What actually works:** Clean diarization — achieved through the workflow fixes in Findings 3, 4, and 5 — directly produces cleaner summaries and correctly attributed action items. The fix is upstream, not in the summary engine.
 
 ---
 
-## Finding 2 — Fireflies Beats Otter on Diarization Not Because of a Better Model, But Because of Metadata
+## Finding 2 — Otter Has Zoom Metadata Import — But Only for Internal Participants
 
-**The gap:** In independent 2026 benchmarks, Fireflies achieves 7.2% Diarization Error Rate vs Otter's 10.7% — a 33% relative improvement. Most users and analysts assume Fireflies has a better acoustic model.
+**The gap:** When OtterPilot joins a Zoom meeting, it pulls participant display names from the Zoom meeting roster in real-time and uses them to anchor speaker labels automatically. This is Otter's strongest speaker ID feature — and one of its least understood.
 
-**The actual reason:** Fireflies pulls participant names directly from Zoom, Google Meet, and Microsoft Teams meeting metadata. When you join a Zoom call with 4 participants, Zoom already knows everyone's display name. Fireflies reads that metadata and uses it to anchor speaker labels from the first second of the meeting — bypassing the cold-start problem entirely.
+**What most users don't know:** This feature works well for internal team meetings where everyone is on Zoom with their real display name. It breaks down for:
+- External guests who join with aliases or generic names ("iPhone" or "User 12345")
+- Google Meet and Microsoft Teams — Zoom is the documented case; Teams and Meet coverage is partial and less reliable
+- Participants not in the Zoom roster (phone dial-ins, anonymous joins)
 
-Otter partially does this for internal workspace users but not for external participants or guests.
-
-**What this means:** The performance gap between Otter and Fireflies is not a model quality problem. It is a metadata integration problem. Otter is leaving readily-available identity information on the table.
+**The competitor comparison:**
+Fireflies achieves 7.2% Diarization Error Rate vs Otter's 10.7% — a 33% relative improvement (Picovoice 2026). The gap is not a model quality difference. Fireflies's metadata integration is more robust across platforms and edge cases than Otter's. Otter has the right idea. The execution has gaps.
 
 **Evidence:**
 > *"Fireflies keeps speaker labels mostly correct even with overlapping speech."*
 — cotera.co comparative review
 
-> *"Fireflies: 7.2% DER vs Otter: 10.7% DER in multi-speaker tests."*
-— Picovoice State of Speaker Diarization 2026
-
-**What a fix looks like:** Otter could read Zoom/Meet/Teams participant metadata at meeting start, pre-populate voice labels with display names, and immediately close the 33% gap to Fireflies — without retraining a single model. This is an integration decision, not an AI problem.
+**What a complete fix looks like:** Extend metadata integration to cover Teams and Meet with the same reliability as Zoom, handle external guest edge cases gracefully, and surface this feature in onboarding so users know it exists.
 
 ---
 
-## Finding 3 — Otter's Onboarding Teaches None of the Three Steps That Actually Work
+## Finding 3 — Otter's Onboarding Teaches None of the Features That Actually Work
 
-**The three steps that produce clean transcripts:**
-1. Pre-register voice profiles for known participants (eliminates cold-start)
-2. Tag first speaker within the first speaking turn (propagates labels forward)
-3. Add domain vocabulary before meeting (reduces jargon errors)
+**The three features that produce clean transcripts:**
+1. My Voiceprint — pre-register your own voice via a scripted reading (Account Settings → My Voiceprint)
+2. Tag-early during meetings — tagging a speaker mid-meeting propagates the label forward automatically
+3. Custom vocabulary — add domain terms before meetings for 10–15% accuracy improvement on jargon
 
 **What Otter's onboarding actually teaches:**
 - Connect your calendar
 - Try OtterPilot
 - Upgrade to Business
 
-**The gap:** All three high-impact workflow steps require users to discover them independently — through Reddit, third-party reviews, or trial and error. None of them surface in Otter's onboarding flow or first-meeting experience.
+**The gap:** All three high-impact features require users to discover them independently — through Reddit, third-party tutorials, or trial and error. My Voiceprint was last prominently documented in 2020–2021. Custom vocabulary is buried in Settings. Tag-early propagation is not explained anywhere.
 
-**This is the root cause of Findings 1, 4, and 5.** If onboarding taught these three steps, most diarization failures would not reach the user.
+**This is the root cause of Findings 1, 4, and 5.** If onboarding surfaced these features at the right moment — before a first meeting, when a new participant joins, when a domain term is misheard — most diarization failures would not reach the user.
 
-**This is the core product opportunity:**
+**What the right onboarding moment looks like:**
+- Before meeting with new participants → *"Set up voice profiles now?"*
+- First time a Speaker N label appears → *"Tag this speaker now — it propagates through the whole transcript"*
+- First time a technical term is mistranscribed → *"Add this to your custom vocabulary?"*
 
-A pre-meeting checklist prompt — *"This meeting has 3 new participants. Set up their voice profiles now?"* — would surface the cold-start fix at the exact moment of need.
-
-A during-meeting prompt — *"We detected an unlabeled speaker. Click to identify them now."* — would surface the tag-early fix in context.
-
-A first-meeting domain prompt — *"What industry is your team in? We'll optimize transcription for your vocabulary."* — would surface the jargon fix at signup.
-
-None of these require model changes. All three are onboarding and UX decisions.
+None of these require model changes. All three are product and UX decisions.
 
 ---
 
-## Finding 4 — The Cold-Start Problem Affects Every First-Time Meeting
+## Finding 4 — My Voiceprint Exists But Is One-Sided, Buried, and Four Years Out of Date
 
-**The gap:** Otter cannot name any speaker it has never heard before. On first-time meetings with new participants — job interviews, client calls, onboarding sessions, external vendor meetings — the output is always Speaker 1, Speaker 2, Speaker N.
+**The gap:** Otter has a voice calibration feature — "My Voiceprint" — accessible via Account Settings. The user reads a scripted passage aloud for 1–2 minutes. Otter learns their vocal characteristics and automatically tags them in future recordings.
 
-**What Otter's docs say:** Nothing about this. The help article "Speaker Identification Overview" describes how voice profiles work for *known* speakers. It does not explain that first-time speakers produce generic labels by default.
+**Why most users don't know it exists:**
+- Last prominently documented in 2020–2021
+- Not mentioned in current onboarding
+- Not surfaced before first meeting
+- Not on the current Features page
+- Discoverable only through third-party tutorials or deep Settings exploration
 
-**The scale of the problem:** Every new participant, every external call, every interview, every guest on a recurring meeting — all cold-start failures. For teams that regularly meet with clients, candidates, or vendors, this is not an edge case. It is the default experience.
+**The critical limitation:** My Voiceprint only trains for the account holder's voice. There is no mechanism for colleagues, clients, or meeting guests to enroll their voice before a meeting. Every participant other than the account holder still hits the cold-start problem.
+
+**The scale of the problem:** Every new participant, every external call, every interview, every client meeting — all produce Speaker N labels for everyone except the Otter account holder. For teams that regularly meet with clients, candidates, or vendors, this is not an edge case. It is the default experience.
 
 **Evidence from users:**
 > *"A sea of Speaker 1, Speaker 2 — a nightmare to figure out who said what."*
@@ -133,126 +136,118 @@ None of these require model changes. All three are onboarding and UX decisions.
 > *"There are no speaker names which just makes the whole thing more confusing."*
 — tldv.io review
 
-> *"Identified a third person during calls, whereas we were only two."*
-— thebusinessdive.com reviewer
-
-**What actually works:** Pre-register voice profiles before the meeting via Settings > My Otter AI > Voice. Otter can match against profiles registered in advance, eliminating the cold-start problem entirely for known participants. This workflow is buried in Settings and never surfaced by onboarding.
+**What a complete fix looks like:** A pre-meeting enrollment link — sent to all calendar participants before the meeting — allowing each person to complete a 60-second voice sample from their own device. Otter has the voiceprint infrastructure. It is missing the group enrollment flow.
 
 ---
 
-## Finding 5 — Manual Tagging Within the First Speaking Turn Propagates Throughout the Transcript
+## Finding 5 — Passive Enrollment Exists But Is Framed as a Bug, Not a Feature
 
-**The gap:** Otter has a feature most users discover only after a meeting ends: if you click a Speaker N label during a live meeting and type a real name, Otter propagates that label forward through the entire transcript automatically. Users who tag early get a clean transcript. Users who tag after the meeting do it line by line.
+**The gap:** Otter's primary mechanism for building voice profiles for most users is post-meeting correction and learning:
+1. After a meeting, speakers appear as Speaker 1, Speaker 2
+2. User manually tags the correct name to each label
+3. Otter stores the voice-to-name mapping and automatically applies it to future meetings with that person
+4. On Workspace accounts, profiles are shared across the whole team
 
-**What this means in time:**
-- Tag during meeting (under 2 minutes total) → clean transcript on export
-- Tag after meeting → 15–30 minutes of manual correction per hour of audio
+This is functionally passive enrollment — Otter builds voice profiles from natural conversation and gets smarter over time. But it is never marketed as a feature. It is buried in a help article as "Otter learns over time."
 
-**What Otter's docs say:** The help article "Best Practices to Maximize Speaker Identification" mentions post-meeting tagging as the primary workflow. It does not clearly communicate that tagging *during* the meeting propagates labels forward, nor does it quantify the time difference.
+**What this means in practice:**
+- Tag during meeting (under 2 min total) → clean transcript on export, profile saved for next time
+- Tag after meeting → 15–30 minutes of line-by-line correction, same profile saved but more painfully
+
+**What Otter's docs say:** The help article "Best Practices to Maximize Speaker Identification" mentions post-meeting tagging as the primary workflow. It does not clearly communicate that tagging *during* the meeting propagates labels forward, nor does it explain that this is how voice profiles are built.
 
 **Evidence from users:**
 > *"Constantly having to manually review everything, correct errors, and hold Otter's hand."*
 — Brad, CMO, Capterra
 
-> *"The transcripts topped out around 85% accuracy, requiring frequent edits."*
-— Brad P., Capterra
-
-**What actually works:** Tag the first Speaker N label within their first speaking turn. Otter propagates the name forward. A second speaker can be tagged within their first turn. Total effort: under 2 minutes during the meeting vs 20+ minutes after.
-
-**Why Otter doesn't teach this prominently:** Every manual tag also trains Otter's voice model — Otter gets free labeled data from corrections. The incentive to make post-meeting cleanup faster is real, but so is the value of accumulated correction data.
+**The incentive misalignment:** Every manual correction also trains Otter's voice model — users provide free labeled data through their cleanup work. This is a real incentive to keep the tag-after workflow as the default rather than teaching tag-early or pre-enrollment.
 
 ---
 
-## Finding 6 — Voice Change Detection Should Trigger Progressive Speaker Enrollment
+## Finding 6 — Otter Is Allegedly Building Voiceprints From All Participants Without Consent
 
-**The proposed fix:** Otter already detects speaker changes — that is how diarization works. Every time the model segments a new voice boundary, the trigger exists in the pipeline. What is missing is a UI action at that exact moment.
+**The gap:** In August 2025, a federal class action lawsuit (consolidated cases in the Northern District of California) alleged that Otter's AI notetaker has been silently building biometric voiceprints from all meeting participants — including people who never signed up for Otter, never consented to biometric data collection, and were unaware Otter was even present on the call.
 
-**The idea:** Every time Otter detects a new voice entering the conversation, surface a time-sensitive tagging prompt for that specific speaker — not a generic post-meeting cleanup screen, but a real-time nudge tied to the speaker change event.
+**The allegations:**
+- Otter captures voice embeddings from every speaker in every meeting it records
+- These voiceprints are stored indefinitely and cross-referenced across meetings
+- The voiceprints are used to train Otter's ML models
+- Participants who never created an Otter account are included
 
-Prompt timing matters. In fast-paced meetings, speaker turns can last 5–10 seconds. A long window is too slow — the voice may already be gone before the user acts. The right model:
+**The legal claims:** Violations of the Illinois Biometric Information Privacy Act (BIPA) and California wiretap law. A motion to dismiss was scheduled for May 2026.
 
-```
-Meeting minute 0:00 — First speaker detected
-  → 20-second prompt at meeting open (relaxed — meeting hasn't started yet)
-
-Meeting minute 2:14 — New voice detected mid-meeting
-  → 10-second non-blocking prompt (tight, auto-dismisses, doesn't interrupt flow)
-
-Meeting minute 8:45 — New voice detected mid-meeting
-  → 10-second non-blocking prompt
-
-Any missed tag → "Speaker N" stays as a clickable inline label throughout
-  → User can tag anytime, not just during the window
-```
-
-This is **progressive enrollment** — each new voice enrolls at the moment it appears, not retroactively. The window is short enough to stay in sync with fast conversation, non-blocking enough not to disrupt the meeting, and recoverable if missed. Otter already has the detection. It is missing the enrollment trigger and the tiered prompt design.
-
-**Why this works technically:** The speaker change boundary is already computed by the diarization model. Otter has the timestamp. All that is needed is a frontend event that fires at that boundary and prompts the user. No model changes. No retraining. Pure product engineering.
-
-**What this solves:** Findings 4 and 5 — cold-start failures and post-meeting cleanup — both disappear if enrollment happens progressively throughout the meeting.
-
----
-
-## Finding 7 — Overlap-Aware Voice Calibration Could Predict Speaker Identity During Crosstalk
-
-**The proposed research direction:** The hardest diarization failure is crosstalk — two or more people speaking simultaneously. Current systems collapse accuracy to 60–70% or drop the audio entirely when voices overlap.
-
-**The idea:** Before the meeting begins, run a brief calibration phase where all participants speak simultaneously for 5–10 seconds — intentionally creating controlled overlap. The system uses this overlap sample to build **overlap-robust voice embeddings** for each speaker.
-
-```
-Calibration phase (10 seconds):
-  All speakers count together: "1, 2, 3, 4, 5..."
-  System records overlap fingerprint for each voice
-
-During meeting:
-  When voices overlap, system uses fingerprints to decompose mixed audio
-  Attributes each segment to the correct speaker rather than dropping it
-```
-
-**Why this is technically valid:** This is a known research concept — overlap-aware speaker diarization. Voice source separation using known speaker embeddings (similar to what SpeechBrain and pyannote-audio implement) can isolate individual voices from a mixed signal if reference embeddings are available. The calibration phase creates those reference embeddings under realistic overlap conditions, making the model more robust when actual crosstalk happens.
-
-**Published research support:** The 2023 paper "Lexical Speaker Error Correction" (arXiv:2306.09313) and the "Speaker Diarization With Lexical Information" series (arXiv:1811.10761, arXiv:2004.06756) demonstrate that combining acoustic embeddings with additional signal context significantly reduces DER. Overlap-robust calibration is the natural extension of this work to the enrollment phase.
-
-**What this requires:** Access to Otter's diarization pipeline internals — this cannot be implemented externally. It is a proposal for Otter's engineering team. But it is the only approach that addresses crosstalk at the model level rather than asking users to avoid talking over each other.
-
-**Estimated impact if implemented:** Based on published overlap-aware diarization benchmarks, DER in high-crosstalk conditions drops from ~25–30% toward 10–12% — the difference between a transcript that is unusable and one that requires light cleanup.
-
----
-
-## Finding 8 — Jargon Failure Is Fixable But Otter Buries the Fix
-
-**The gap:** Otter consistently mistranscribes domain-specific terms. "Kubernetes" becomes "communitas." "PostgreSQL" becomes "post kres kell." "Supabase" produces wrong outputs. This affects technical, legal, and medical users disproportionately.
-
-**What Otter's docs say:** Custom vocabulary exists — users can add domain terms manually. But this feature is not surfaced during onboarding, not prompted when jargon is detected, and requires manual discovery.
+**Why this matters beyond the lawsuit:** If the allegations are accurate, Otter is doing aggressive passive voiceprint collection already — just without surfacing it to users or obtaining consent. The technical capability exists. The consent and transparency layer does not.
 
 **Evidence:**
-> *"'Kubernetes' becomes 'communitas' consistently."*
-— anarlog.so reviewer
+> *"Records meeting participants' conversations even if they are not Otter accountholders."*
+— Lead plaintiff Justin Brewer, federal class action
 
+> *"AI notetaking tools under fire: lessons from the Otter.ai class action complaint."*
+— Workplace Privacy Report, 2025
+
+**What this means for product:** The voiceprint infrastructure Otter has built is powerful enough to identify speakers across meetings. The problem is not capability — it is consent, transparency, and surfacing. A feature that does what the lawsuit describes, but with explicit opt-in and clear user control, would be one of the most powerful speaker ID systems in the market.
+
+---
+
+## Finding 7 — Crosstalk Has No Solution — And a Pre-Meeting Calibration Phase Could Fix It
+
+**The confirmed gap:** Otter has no crosstalk handling feature. Their own help center explicitly advises users to "avoid overlapping dialogue" because the system cannot distinguish multiple people speaking simultaneously. Overlapping audio is either dropped or mis-attributed.
+
+> *"Cross-talk was the biggest issue — Otter sometimes merged overlapping utterances into one speaker."*
+— aiflowreview.com
+
+> *"Cross-talk between multiple simultaneous speakers resulted in accuracy falling to 70–75%."*
+— flowith.io comparative test
+
+**The proposed research direction:** A brief passive calibration window at the start of every meeting — the first 60 seconds of natural conversation before the agenda begins — could be used to build overlap-robust voice embeddings for each participant. Instead of a scripted "count to five together" exercise, the system listens to natural greeting chatter and constructs voice profiles from that.
+
+```
+Meeting starts → participants greet each other naturally
+System passively builds per-speaker embeddings from greeting chatter
+When crosstalk happens later, system uses embeddings to decompose mixed audio
+Attribution continues rather than dropping the overlapping segment
+```
+
+**Why passive calibration is better than active calibration:** Active calibration ("everyone speak at once") feels unnatural in a professional meeting. Passive calibration uses audio that is already happening — no workflow change required from participants.
+
+**Published research support:** The "Speaker Diarization With Lexical Information" series (arXiv:1811.10761, arXiv:2004.06756) and "Lexical Speaker Error Correction" (arXiv:2306.09313) demonstrate that pre-built speaker embeddings combined with acoustic clustering significantly reduce DER in overlap conditions. Passive calibration from natural speech is the practical implementation path.
+
+**Estimated impact:** Based on published overlap-aware diarization benchmarks, DER in high-crosstalk conditions drops from ~25–30% toward 10–12% when overlap-robust embeddings are used — the difference between a transcript that is unusable and one that requires light cleanup.
+
+**What this requires:** Access to Otter's diarization pipeline — not implementable externally. This is a proposal for Otter's engineering team, grounded in published research.
+
+---
+
+## Finding 8 — Jargon Fix Is Real But Otter Buries It
+
+**The gap:** Otter consistently mistranscribes domain-specific terms. "Kubernetes" becomes "communitas." "PostgreSQL" produces wrong outputs. Custom vocabulary — available in Settings — produces 10–15% accuracy improvement on domain terms. It is not mentioned in onboarding, not prompted when jargon is detected, and requires manual discovery.
+
+**Evidence:**
 > *"After adding 'Kubernetes,' 'PostgreSQL,' and 'Supabase,' accuracy improved 10–15% for jargon-heavy meetings."*
 — tldv.io reviewer
 
 > *"Sometimes ignored custom vocabulary anyway."*
 — tldv.io reviewer (limitation)
 
-**What actually works:** Add domain terms to Settings > My Otter AI > Custom Vocabulary before the meeting. A 5-minute setup session per domain (engineering, legal, medical) produces consistent improvement across all future meetings in that domain.
-
-**The onboarding opportunity:** A domain-detection prompt during first signup ("What industry are you in?") could pre-populate relevant vocabulary automatically. Otter does not do this.
+**The onboarding opportunity:** Domain detection at signup ("What industry are you in?") could pre-populate relevant vocabulary automatically. Otter does not do this.
 
 ---
 
 ## Summary: What Otter Could Ship
 
 **Sprint-sized — no model changes:**
-1. **Pre-meeting participant prompt** — detect new participants from calendar invite, prompt voice profile setup
-2. **Progressive enrollment trigger** — fire a tiered tagging prompt at each speaker change boundary (Finding 6)
-3. **Domain vocabulary onboarding** — ask industry at signup, pre-populate custom vocabulary (Finding 8)
+1. **Resurface My Voiceprint** — add to onboarding, prompt before first meeting, make it discoverable
+2. **Pre-meeting group enrollment link** — send calendar participants a 60-second voice sample link before meetings (Finding 4)
+3. **Tag-early education** — surface propagation behavior in the UI at the moment a Speaker N label appears (Finding 5)
+4. **Domain vocabulary onboarding** — ask industry at signup, pre-populate custom vocabulary (Finding 8)
+5. **Smart post-meeting cleanup** — right after meeting ends, show only speaker change moments for quick identification instead of full transcript review
 
 **Quarter-sized — model and pipeline changes:**
-4. **Overlap-aware calibration phase** — 10-second pre-meeting overlap sample builds crosstalk-robust embeddings (Finding 7)
-5. **Zoom/Meet/Teams metadata integration** — pull participant display names at meeting start, close the 33% DER gap vs Fireflies without model retraining (Finding 2)
+6. **Passive calibration window** — use first 60 seconds of natural meeting chatter to build overlap-robust embeddings (Finding 7)
+7. **Extended metadata integration** — match Zoom's reliability for Teams and Meet, handle external guest edge cases (Finding 2)
 
-The first three are onboarding and UX decisions. The last two require engineering investment but address root causes, not symptoms.
+**Consent and transparency (legal priority):**
+8. **Explicit voiceprint consent layer** — given the BIPA litigation, surface what voiceprint data is collected, for whom, and give participants explicit opt-in/opt-out (Finding 6)
 
 ---
 
@@ -260,9 +255,9 @@ The first three are onboarding and UX decisions. The last two require engineerin
 
 | Step | When | Time Required | Impact |
 |---|---|---|---|
-| Pre-register voice profiles | Before meeting | 2 min per person | Eliminates cold-start, enables named labels from minute 1 |
-| Tag first speaker label | First speaking turn | Under 30 seconds | Propagates names throughout, eliminates post-meeting cleanup |
-| Add custom vocabulary | Before first domain meeting | 5 minutes | 10–15% accuracy improvement on technical/domain terms |
+| Complete My Voiceprint | Account setup | 2 minutes | Your voice auto-tagged in all future meetings |
+| Tag first Speaker N label | First speaking turn in meeting | Under 30 seconds | Propagates name throughout entire transcript |
+| Add custom vocabulary | Before first domain meeting | 5 minutes | 10–15% accuracy improvement on technical terms |
 
 **Total setup time: ~8 minutes.**
 **Estimated cleanup time saved: 15–25 minutes per meeting.**
@@ -273,8 +268,9 @@ The first three are onboarding and UX decisions. The last two require engineerin
 
 This case study is built from:
 - Otter's own help documentation and help articles (cited throughout)
-- Published diarization benchmarks (Picovoice 2026, Notta vs Otter comparative tests)
-- Academic research on speaker diarization pipelines (AssemblyAI technical documentation, arXiv papers on lexical diarization)
+- Published diarization benchmarks (Picovoice 2026, Notta vs Otter comparative tests, flowith.io)
+- Academic research on speaker diarization (arXiv:1811.10761, arXiv:2004.06756, arXiv:2306.09313)
+- Active litigation documents (Brewer v. Otter.ai, NDCA 2025)
 - 200+ user reviews across G2, Capterra, Trustpilot, Reddit, and third-party review sites
 
 It does not include controlled experiments with Otter's system. That is the natural next step — a quantified study measuring accuracy and cleanup time across the three workflow conditions described here. The infrastructure for that study (scorer, parser, ground truth methodology) is available at: github.com/sanmati1997 *(coming soon)*
